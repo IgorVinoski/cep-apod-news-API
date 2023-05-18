@@ -2,7 +2,6 @@ import axios from 'axios';
 import { Request, Response } from 'express';
 import knex from '../../database/db';
 
-
 export async function consultaApod(req: Request, res: Response) {
     try{
         if(!req.query.apikey){
@@ -10,14 +9,12 @@ export async function consultaApod(req: Request, res: Response) {
                 message: "error not found apikey"
             })
         }else{
-            
             const date = new Date();
             const dia = date.toLocaleDateString('en-GB'); // "dd/mm/yyyy"
-            const select:any = await knex('apod').select('data_post',).where('data_post', `${dia}`)
+            const select:any = await knex('apod').select('data_post',).where('data_post', `${dia}`);
             if(!select[0]){
                 let url = `https://api.nasa.gov/planetary/apod?api_key=${req.query.apikey}`;
-                const response = await axios.get(`${url}`)
-                
+                const response = await axios.get(`${url}`) 
                 await knex('apod').insert({
                     copyright: response.data.copyright, 
                     data_post: response.data.date, 
@@ -28,38 +25,21 @@ export async function consultaApod(req: Request, res: Response) {
                     title: response.data.title, 
                     url: response.data.url
                 }).then(() => {
-                    console.log('Inserindo o dia ', dia, ' na tabela')
+                    console.log('Inserindo o dia ', dia, ' na tabela');
                 }).catch((e) => {
                     console.log('ERROR => ')
-                    console.log(e)
+                    console.log(e);
                 })
-                return res.status(200).json(response.data)
-
+                return res.status(200).json(response.data);
             }else{
-                console.log("TESTE")
-                // const result:any = knex.raw(
-                //     `select copyright, 
-                //     to_char(data_post, 'dd/mm/yyyy') as date,  
-                //     explanation, 
-                //     hdurl, 
-                //     media_type, 
-                //     service_version, 
-                //     title, 
-                //     url 
-                //     from apod`
-                // )
+                console.log("TESTE");
                 const subcolum = knex.raw(
                     `select to_char(data_post, 'dd/mm/yyyy') as date`
-                )
+                );
                 return res.status(200).send(await knex('apod').select("copyright", knex.raw(`to_char(data_post, 'dd/mm/yyyy') as date`), 'explanation', 'hdurl', 'media_type', 'service_version', 'title', 'url')
                 )
             }
-              
-
-            
         }
-
-
     }catch(e){
         console.log(e)
         return res.status(500).send(e)
